@@ -2,14 +2,17 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import schemas, models, database, llm_service
 from app.database import get_db, init_db
 
 app = FastAPI()
 
-# Инициализация БД
-init_db()
+@app.on_event("startup")
+async def on_startup():
+    await init_db()
 
 # Настройка CORS
 app.add_middleware(
@@ -26,12 +29,15 @@ llm = llm_service.LLMService()
 @app.post("/api/chat", response_model=schemas.ChatResponse)
 async def chat(
         request: schemas.ChatRequest,
-        db: Session = Depends(get_db)
+        db: AsyncSession = Depends(get_db)
 ):
     # Получаем историю диалога
-    db_messages = db.query(models.Message).filter(
-        models.Message.dialog_id == request.dialog_id
-    ).order_by(models.Message.created_at).all()
+    result = await db.execute(
+        select(models.Message)
+        .where(models.Message.dialog_id == request.dialog_id)
+        .order_by(models.Message.created_at)
+    )
+    db_messages = result.scalars().all()
 
     # Подготавливаем сообщения для LLM
     messages = llm.prepare_messages(db_messages, request.user_message)
@@ -55,6 +61,6 @@ async def chat(
     )
     db.add(assistant_msg)
 
-    db.commit()
+    await db.commit()
 
     return {"dialog_id": request.dialog_id, "assistant_message": assistant_message}

@@ -4,15 +4,15 @@ from app.config import settings
 from app.models import Message
 from app.schemas import MessageCreate
 
-openai.api_key = settings.OPENAI_API_KEY
-
+# Создаём асинхронного клиента OpenAI
+client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
 class LLMService:
     SYSTEM_PROMPT = "You are a helpful assistant. Answer concisely and clearly."
 
     async def generate_response(self, messages: List[Dict]) -> str:
         try:
-            response = await openai.ChatCompletion.acreate(
+            response = await client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=messages,
                 temperature=0.7

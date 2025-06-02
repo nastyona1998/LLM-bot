@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 
-API_URL = "http://localhost:8000/api/chat"
+API_URL = "http://127.0.0.1:8000/api/chat"
 
 
 class LoggingMiddleware:
@@ -43,7 +43,11 @@ async def process_message(message: types.Message):
             )
             response.raise_for_status()
             data = response.json()
-            await message.reply(data["assistant_message"])
+            history = data["history"]
+            history_text = "\n".join(
+                f"{msg['role']}: {msg['content']}" for msg in history
+            )
+            await message.reply(history_text)
         except httpx.HTTPError as e:
             logger.error(f"API request failed: {e}")
             await message.reply("Sorry, I'm having trouble connecting to the server. Please try again later.")
