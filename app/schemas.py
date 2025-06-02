@@ -1,16 +1,19 @@
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 
+# Схема запроса для чата (от пользователя к API)
 class ChatRequest(BaseModel):
-    dialog_id: str
-    user_message: str
+    dialog_id: str  # Идентификатор диалога
+    user_message: str  # Сообщение пользователя
 
+# Схема ответа для чата (от API к пользователю)
 class ChatResponse(BaseModel):
-    dialog_id: str
-    assistant_message: str
-    history: Optional[List[Dict[str, str]]] = None
+    dialog_id: str  # Идентификатор диалога
+    assistant_message: str  # Ответ ассистента
+    history: Optional[List[Dict[str, str]]] = None  # Вся история диалога
 
+# Схема для создания нового сообщения в базе данных
 class MessageCreate(BaseModel):
-    dialog_id: str
-    role: str
-    content: str
+    dialog_id: str  # Идентификатор диалога
+    role: str  # Роль: 'user' или 'assistant'
+    content: str  # Текст сообщения
