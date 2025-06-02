@@ -7,6 +7,7 @@ import httpx
 
 from app.config import settings
 from app.schemas import ChatRequest
+from app.llm_service import LLMService
 
 # Настройка логирования
 logging.basicConfig(
@@ -20,6 +21,9 @@ bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 
 API_URL = "http://127.0.0.1:8000/api/chat"
+
+llm = LLMService()
+system_prompt_text = llm.SYSTEM_PROMPT
 
 
 class LoggingMiddleware:
@@ -43,11 +47,20 @@ async def process_message(message: types.Message):
             )
             response.raise_for_status()
             data = response.json()
-            history = data["history"]
+            history = data.get("history")
+            if history is None:
+                await message.reply("Ошибка: сервер не вернул историю диалога.")
+                return
+            # Найдём system prompt (обычно это первый элемент в history)
+            system_prompt = ""
+            if history and history[0]["role"] == "system":
+                system_prompt = f"*SYSTEM*: {system_prompt_text}\n"
+                history = history[1:]  # убираем system prompt из дальнейшей истории
+
             history_text = "\n".join(
-                f"{msg['role']}: {msg['content']}" for msg in history
+                f"*{msg['role']}*: {msg['content']}" for msg in history
             )
-            await message.reply(history_text)
+            await message.reply(system_prompt + history_text, parse_mode="Markdown")
         except httpx.HTTPError as e:
             logger.error(f"API request failed: {e}")
             await message.reply("Sorry, I'm having trouble connecting to the server. Please try again later.")

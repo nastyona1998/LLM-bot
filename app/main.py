@@ -63,4 +63,13 @@ async def chat(
 
     await db.commit()
 
-    return {"dialog_id": request.dialog_id, "assistant_message": assistant_message}
+    return {
+        "dialog_id": request.dialog_id,
+        "assistant_message": assistant_message,
+        "history": (
+            [{"role": "system", "content": llm.SYSTEM_PROMPT}]
+            + [{"role": msg.role, "content": msg.content} for msg in db_messages]
+            + [{"role": "user", "content": request.user_message},
+               {"role": "assistant", "content": assistant_message}]
+        )
+    }
