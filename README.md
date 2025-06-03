@@ -46,7 +46,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 
 # В другом терминале запустите бота
-python app/bot.py
+python -m app.bot
 ```
 
 ## Пример запроса
